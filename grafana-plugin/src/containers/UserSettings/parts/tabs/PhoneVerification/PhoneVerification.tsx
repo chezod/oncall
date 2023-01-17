@@ -91,6 +91,7 @@ const PhoneVerification = observer((props: PhoneVerificationProps) => {
   const onSubmitCallback = useCallback(async () => {
     if (isCodeSent) {
       userStore.verifyPhone(userPk, code).then(() => {
+        setState({ isCodeSent: true});
         userStore.loadUser(userPk);
       });
     } else {
@@ -126,6 +127,10 @@ const PhoneVerification = observer((props: PhoneVerificationProps) => {
   ]);
 
   const isTwilioConfigured = teamStore.currentTeam?.env_status.twilio_configured;
+  const isAsteriskConfigured = teamStore.currentTeam?.env_status.asterisk_configured;
+  const phoneProvider = teamStore.currentTeam?.env_status.phone_provider;
+  const isPhoneProviderConfigured = (phoneProvider === "Asterisk") ? isAsteriskConfigured : isTwilioConfigured;
+
   const phoneHasMinimumLength = phone?.length > 8;
 
   const isPhoneValid = phoneHasMinimumLength && PHONE_REGEX.test(phone);
@@ -133,7 +138,7 @@ const PhoneVerification = observer((props: PhoneVerificationProps) => {
 
   const action = isCurrentUser ? UserActions.UserSettingsWrite : UserActions.UserSettingsAdmin;
   const isButtonDisabled =
-    phone === user.verified_phone_number || (!isCodeSent && !isPhoneValid) || !isTwilioConfigured;
+    phone === user.verified_phone_number || (!isCodeSent && !isPhoneValid) || !isPhoneProviderConfigured;
 
   const isPhoneDisabled = !!user.verified_phone_number;
   const isCodeFieldDisabled = !isCodeSent || !isUserActionAllowed(action);
@@ -158,7 +163,23 @@ const PhoneVerification = observer((props: PhoneVerificationProps) => {
         </>
       )}
 
-      {!isTwilioConfigured && store.hasFeature(AppFeature.LiveSettings) && (
+      {!isAsteriskConfigured && phoneProvider === "Asterisk" && store.hasFeature(AppFeature.LiveSettings) && (
+        <>
+          <Alert
+            severity="warning"
+            // @ts-ignore
+            title={
+              <>
+                Can't verify phone. <PluginLink query={{ page: 'live-settings' }}> Check ENV variables</PluginLink>{' '}
+                related to Asterisk.
+              </>
+            }
+          />
+          <br />
+        </>
+      )}
+
+      {!isTwilioConfigured && phoneProvider === "Twillio" && store.hasFeature(AppFeature.LiveSettings) && (
         <>
           <Alert
             severity="warning"
@@ -185,7 +206,7 @@ const PhoneVerification = observer((props: PhoneVerificationProps) => {
               autoFocus
               id="phone"
               required
-              disabled={!isTwilioConfigured || isPhoneDisabled}
+              disabled={!isPhoneProviderConfigured || isPhoneDisabled}
               placeholder="Please enter the phone number with country code, e.g. +12451111111"
               // @ts-ignore
               prefix={<Icon name="phone" />}
@@ -235,7 +256,7 @@ const PhoneVerification = observer((props: PhoneVerificationProps) => {
         isCodeSent={isCodeSent}
         isButtonDisabled={isButtonDisabled}
         isTestCallInProgress={userStore.isTestCallInProgress}
-        isTwilioConfigured={isTwilioConfigured}
+        isPhoneProviderConfigured={isPhoneProviderConfigured}
         onSubmitCallback={onSubmitCallback}
         handleMakeTestCallClick={handleMakeTestCallClick}
         onShowForgetScreen={() => setState({ showForgetScreen: true })}
@@ -275,7 +296,7 @@ interface PhoneVerificationButtonsGroupProps {
   isCodeSent: boolean;
   isButtonDisabled: boolean;
   isTestCallInProgress: boolean;
-  isTwilioConfigured: boolean;
+  isPhoneProviderConfigured: boolean;
 
   onSubmitCallback(): void;
   handleMakeTestCallClick(): void;
@@ -289,7 +310,7 @@ function PhoneVerificationButtonsGroup({
   isCodeSent,
   isButtonDisabled,
   isTestCallInProgress,
-  isTwilioConfigured,
+  isPhoneProviderConfigured,
   onSubmitCallback,
   handleMakeTestCallClick,
   onShowForgetScreen,
@@ -324,7 +345,7 @@ function PhoneVerificationButtonsGroup({
         <>
           <WithPermissionControlTooltip userAction={action}>
             <Button
-              disabled={!user?.verified_phone_number || !isTwilioConfigured || isTestCallInProgress}
+              disabled={!user?.verified_phone_number || !isPhoneProviderConfigured || isTestCallInProgress}
               onClick={handleMakeTestCallClick}
             >
               {isTestCallInProgress ? 'Making Test Call...' : 'Make Test Call'}
