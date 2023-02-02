@@ -49,3 +49,4 @@ opentelemetry-exporter-otlp-proto-grpc==1.15.0
 pyroscope-io==0.8.1
 django-dbconn-retry==0.1.7
 drf-recaptcha==2.2.2
+django-deprecate-fields==0.1.1
