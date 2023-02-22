@@ -36,7 +36,7 @@ jobs:
         run: helm install test-release helm/oncall --values helm/simple.yml --values helm/values-local-image.yml
 
       - name: Await k8s pods and other resources up
-        uses: jupyterhub/action-k8s-await-workloads@v1
+        uses: jupyterhub/action-k8s-await-workloads@v2
         with:
           workloads: "" # all
           namespace: "" # default
