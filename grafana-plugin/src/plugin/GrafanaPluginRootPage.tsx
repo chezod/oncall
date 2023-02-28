@@ -40,6 +40,7 @@ import 'interceptors';
 import { rootStore } from 'state';
 import { useStore } from 'state/useStore';
 import { isUserActionAllowed } from 'utils/authorization';
+import loadJs from 'utils/loadJs';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -54,9 +55,12 @@ dayjs.extend(customParseFormat);
 import 'style/vars.css';
 import 'style/global.css';
 import 'style/utils.css';
+import 'style/responsive.css';
 
 import { getQueryParams, isTopNavbar } from './GrafanaPluginRootPage.helpers';
 import PluginSetup from './PluginSetup';
+
+import grafanaGlobalStyle from '!raw-loader!img/grafanaGlobalStyles.css';
 
 export const GrafanaPluginRootPage = (props: AppRootProps) => {
   return (
@@ -79,13 +83,24 @@ export const Root = observer((props: AppRootProps) => {
     let link = document.createElement('link');
     link.type = 'text/css';
     link.rel = 'stylesheet';
-    link.href = '/public/plugins/grafana-oncall-app/img/grafanaGlobalStyles.css';
+
+    // create a style element
+    const styleEl = document.createElement('style');
+    const head = document.head || document.getElementsByTagName('head')[0];
+    styleEl.appendChild(document.createTextNode(grafanaGlobalStyle));
+
+    // append grafana overriding styles to head
+    head.appendChild(styleEl);
 
     document.head.appendChild(link);
 
     return () => {
-      document.head.removeChild(link);
+      head.removeChild(styleEl); // remove on unmount
     };
+  }, []);
+
+  useEffect(() => {
+    loadJs(`https://www.google.com/recaptcha/api.js?render=${rootStore.recaptchaSiteKey}`);
   }, []);
 
   const updateBasicData = async () => {
@@ -110,7 +125,7 @@ export const Root = observer((props: AppRootProps) => {
     <DefaultPageLayout {...props} page={page}>
       {!isTopNavbar() && (
         <>
-          <Header page={page} backendLicense={store.backendLicense} />
+          <Header backendLicense={store.backendLicense} />
           <LegacyNavTabsBar currentPage={page} />
         </>
       )}
@@ -139,7 +154,7 @@ export const Root = observer((props: AppRootProps) => {
               <EscalationChains />
             </Route>
             <Route path={getRoutesForPage('schedules')} exact>
-              <Schedules />
+              <Schedules query={query} />
             </Route>
             <Route path={getRoutesForPage('schedule')} exact>
               <Schedule />
@@ -157,7 +172,7 @@ export const Root = observer((props: AppRootProps) => {
               <OrganizationLogPage />
             </Route>
             <Route path={getRoutesForPage('chat-ops')} exact>
-              <ChatOps />
+              <ChatOps query={query} />
             </Route>
             <Route path={getRoutesForPage('live-settings')} exact>
               <LiveSettings />

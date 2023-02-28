@@ -51,20 +51,31 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
     errorData: initErrorDataState(),
   };
 
-  alertReceiveChanneltoPoll: { [key: string]: number } = {};
-  alertReceiveChannelTimerId: ReturnType<typeof setTimeout>;
+  private alertReceiveChanneltoPoll: { [key: string]: number } = {};
+  private alertReceiveChannelTimerId: ReturnType<typeof setTimeout>;
 
   async componentDidMount() {
-    this.update().then(this.parseQueryParams);
+    this.update().then(() => this.parseQueryParams(true));
   }
 
-  setSelectedAlertReceiveChannel = (alertReceiveChannelId: AlertReceiveChannel['id']) => {
+  componentDidUpdate(prevProps: Readonly<IntegrationsProps>): void {
+    if (prevProps.match.params.id && !this.props.match.params.id) {
+      this.setState({ errorData: initErrorDataState() }, () => {
+        this.parseQueryParams();
+      });
+    }
+  }
+
+  setSelectedAlertReceiveChannel = (alertReceiveChannelId: AlertReceiveChannel['id'], shouldRedirect = false) => {
     const { store, history } = this.props;
     store.selectedAlertReceiveChannel = alertReceiveChannelId;
-    history.push(`${PLUGIN_ROOT}/integrations/${alertReceiveChannelId || ''}`);
+
+    if (shouldRedirect) {
+      history.push(`${PLUGIN_ROOT}/integrations/${alertReceiveChannelId || ''}`);
+    }
   };
 
-  parseQueryParams = async () => {
+  parseQueryParams = async (isMounting = false) => {
     this.setState({ errorData: initErrorDataState() }); // reset wrong team error to false on query parse // reset wrong team error to false
 
     const {
@@ -103,7 +114,7 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
     }
 
     if (selectedAlertReceiveChannel) {
-      this.setSelectedAlertReceiveChannel(selectedAlertReceiveChannel);
+      this.setSelectedAlertReceiveChannel(selectedAlertReceiveChannel, isMounting);
     }
   };
 
@@ -111,15 +122,6 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
     const { store } = this.props;
     return store.alertReceiveChannelStore.updateItems();
   };
-
-  componentDidUpdate(prevProps: IntegrationsProps) {
-    if (this.props.match.params.id !== prevProps.match.params.id) {
-      this.parseQueryParams();
-    }
-    if (this.props.query.tab !== prevProps.query.tab) {
-      this.parseQueryParams();
-    }
-  }
 
   componentWillUnmount() {
     clearInterval(this.alertReceiveChannelTimerId);
@@ -201,6 +203,8 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
                           alertReceiveChannelToShowSettings: store.selectedAlertReceiveChannel,
                           integrationSettingsTab,
                         });
+
+                        LocationHelper.update({ tab: integrationSettingsTab }, 'partial');
                       }}
                     />
                   </div>
@@ -268,7 +272,7 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
       .then(async (alertReceiveChannel: AlertReceiveChannel) => {
         await store.alertReceiveChannelStore.updateItems();
 
-        this.setSelectedAlertReceiveChannel(alertReceiveChannel.id);
+        this.setSelectedAlertReceiveChannel(alertReceiveChannel.id, true);
 
         this.setState({
           alertReceiveChannelToShowSettings: alertReceiveChannel.id,
@@ -315,7 +319,7 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
       if (alertReceiveChannelId === store.selectedAlertReceiveChannel) {
         const searchResult = alertReceiveChannelStore.getSearchResult();
 
-        this.setSelectedAlertReceiveChannel(searchResult && searchResult[0]?.id);
+        this.setSelectedAlertReceiveChannel(searchResult && searchResult[0]?.id, true);
       }
     });
   };
@@ -345,7 +349,7 @@ class Integrations extends React.Component<IntegrationsProps, IntegrationsState>
   };
 
   handleAlertReceiveChannelSelect = (id: AlertReceiveChannel['id']) => {
-    this.setSelectedAlertReceiveChannel(id);
+    this.setSelectedAlertReceiveChannel(id, true);
   };
 }
 
