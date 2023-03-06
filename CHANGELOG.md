@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Show permission error for accessing Telegram as Viewer ([1273](https://github.com/grafana/oncall/issues/1273))
+
+## v1.1.32 (2023-03-01)
+
+### Fixed
+
+- Schedule filters improvements ([941](https://github.com/grafana/oncall/issues/941))
+- Fix pagination issue on schedules page ([1437](https://github.com/grafana/oncall/pull/1437))
+
+## v1.1.31 (2023-03-01)
+
+### Added
+
+- Add acknowledge_signal and source link to public api
+
+## v1.1.30 (2023-03-01)
+
+### Fixed
+
 - Fixed importing of global grafana styles ([672](https://github.com/grafana/oncall/issues/672))
 - Fixed UI permission related bug where Editors could not export their user iCal link
 - Fixed error when a shift is created using Etc/UTC as timezone
